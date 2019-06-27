@@ -88,6 +88,9 @@ ifndef::git-pull[]
 	Allow several <repository> and <group> arguments to be
 	specified. No <refspec>s may be specified.
 
+--parallel::
+	Fetch all remotes in parallel.
+
 -p::
 --prune::
 	Before fetching, remove any remote-tracking references that no

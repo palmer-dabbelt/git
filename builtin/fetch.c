@@ -66,6 +66,7 @@ static struct refspec refmap = REFSPEC_INIT_FETCH;
 static struct list_objects_filter_options filter_options;
 static struct string_list server_options = STRING_LIST_INIT_DUP;
 static struct string_list negotiation_tip = STRING_LIST_INIT_NODUP;
+static int parallel = 0;
 
 static int git_fetch_config(const char *k, const char *v, void *cb)
 {
@@ -168,6 +169,8 @@ static struct option builtin_fetch_options[] = {
 			TRANSPORT_FAMILY_IPV6),
 	OPT_STRING_LIST(0, "negotiation-tip", &negotiation_tip, N_("revision"),
 			N_("report that we have only objects reachable from this object")),
+	OPT_BOOL(0, "parallel", &parallel,
+		 N_("fetch in parallel from each remote")),
 	OPT_PARSE_LIST_OBJECTS_FILTER(&filter_options),
 	OPT_END()
 };
@@ -1413,12 +1416,15 @@ static void add_options_to_argv(struct argv_array *argv)
 
 }
 
-static int fetch_multiple(struct string_list *list)
+static int fetch_multiple(struct string_list *list, int i)
 {
-	int i, result = 0;
+	int result = 0;
 	struct argv_array argv = ARGV_ARRAY_INIT;
+	const char *name = list->items[i].string;
+	struct child_process cmd = CHILD_PROCESS_INIT;
+	int code;
 
-	if (!append && !dry_run) {
+	if (i == 0 && !append && !dry_run) {
 		int errcode = truncate_fetch_head();
 		if (errcode)
 			return errcode;
@@ -1426,20 +1432,31 @@ static int fetch_multiple(struct string_list *list)
 
 	argv_array_pushl(&argv, "fetch", "--append", NULL);
 	add_options_to_argv(&argv);
+	argv_array_push(&argv, name);
 
-	for (i = 0; i < list->nr; i++) {
-		const char *name = list->items[i].string;
-		argv_array_push(&argv, name);
-		if (verbosity >= 0)
-			printf(_("Fetching %s\n"), name);
-		if (run_command_v_opt(argv.argv, RUN_GIT_CMD)) {
-			error(_("Could not fetch %s"), name);
-			result = 1;
-		}
-		argv_array_pop(&argv);
+	if (verbosity >= 0)
+		printf(_("Fetching %s\n"), name);
+
+	cmd.argv = argv.argv;
+	cmd.git_cmd = 1;
+	code = start_command(&cmd);
+
+	if (!code && !parallel)
+		code = finish_command(&cmd);
+
+	if (i+1 < list->nr)
+		result |= fetch_multiple(list, i+1);
+
+	if (!code && parallel)
+		code |= finish_command(&cmd);
+
+	if (code) {
+		error(_("Could not fetch %s"), name);
+		result |= 1;
 	}
 
 	argv_array_clear(&argv);
+
 	return result;
 }
 
@@ -1653,7 +1670,7 @@ int cmd_fetch(int argc, const char **argv, const char *prefix)
 			die(_("--filter can only be used with the remote "
 			      "configured in extensions.partialclone"));
 		/* TODO should this also die if we have a previous partial-clone? */
-		result = fetch_multiple(&list);
+		result = fetch_multiple(&list, 0);
 	}
 
 	if (!result && (recurse_submodules != RECURSE_SUBMODULES_OFF)) {
