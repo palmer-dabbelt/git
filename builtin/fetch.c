@@ -54,7 +54,7 @@ static int all, append, dry_run, force, keep, multiple, update_head_ok, verbosit
 static int progress = -1;
 static int enable_auto_gc = 1;
 static int tags = TAGS_DEFAULT, unshallow, update_shallow, deepen;
-static int max_children = 1;
+static int max_children_for_submodules = 1;
 static enum transport_family family;
 static const char *depth;
 static const char *deepen_since;
@@ -96,7 +96,7 @@ static int git_fetch_config(const char *k, const char *v, void *cb)
 	}
 
 	if (!strcmp(k, "submodule.fetchjobs")) {
-		max_children = parse_submodule_fetchjobs(k, v);
+		max_children_for_submodules = parse_submodule_fetchjobs(k, v);
 		return 0;
 	} else if (!strcmp(k, "fetch.recursesubmodules")) {
 		recurse_submodules = parse_fetch_recurse_submodules_arg(k, v);
@@ -134,7 +134,7 @@ static struct option builtin_fetch_options[] = {
 		    N_("fetch all tags and associated objects"), TAGS_SET),
 	OPT_SET_INT('n', NULL, &tags,
 		    N_("do not fetch all tags (--no-tags)"), TAGS_UNSET),
-	OPT_INTEGER('j', "jobs", &max_children,
+	OPT_INTEGER('j', "jobs", &max_children_for_submodules,
 		    N_("number of submodules fetched in parallel")),
 	OPT_BOOL('p', "prune", &prune,
 		 N_("prune remote-tracking branches no longer on remote")),
@@ -1633,7 +1633,8 @@ int cmd_fetch(int argc, const char **argv, const char *prefix)
 	for (i = 1; i < argc; i++)
 		strbuf_addf(&default_rla, " %s", argv[i]);
 
-	fetch_config_from_gitmodules(&max_children, &recurse_submodules);
+	fetch_config_from_gitmodules(&max_children_for_submodules,
+				     &recurse_submodules);
 	git_config(git_fetch_config, NULL);
 
 	argc = parse_options(argc, argv, prefix,
@@ -1716,7 +1717,7 @@ int cmd_fetch(int argc, const char **argv, const char *prefix)
 						    recurse_submodules,
 						    recurse_submodules_default,
 						    verbosity < 0,
-						    max_children);
+						    max_children_for_submodules);
 		argv_array_clear(&options);
 	}
 
