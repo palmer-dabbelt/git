@@ -104,6 +104,13 @@ static int git_fetch_config(const char *k, const char *v, void *cb)
 		return 0;
 	}
 
+	if (!strcmp(k, "fetch.jobs")) {
+		max_children_for_fetch = git_config_int(k, v);
+		if (max_children_for_fetch < 0)
+			die(_("negative values not allowed for fetch.jobs"));
+		return 0;
+	}
+
 	return git_default_config(k, v, cb);
 }
 
