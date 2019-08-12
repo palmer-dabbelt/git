@@ -160,6 +160,10 @@ ifndef::git-pull[]
 
 -j::
 --jobs=<n>::
+	Number of parallel children to be used for all forms of fetching.
+	This is the same as passing `--submodule-fetch-jobs=<n>` and
+	`--fetch-jobs=<n>`.
+
 --submodule-fetch-jobs=<n>::
 	Number of parallel children to be used for fetching submodules.
 	Each will fetch from different submodules, such that fetching many

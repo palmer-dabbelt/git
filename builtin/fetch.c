@@ -114,6 +114,20 @@ static int git_fetch_config(const char *k, const char *v, void *cb)
 	return git_default_config(k, v, cb);
 }
 
+static int parse_jobs_arg(const struct option *opt, const char *arg, int unset)
+{
+	int jobs;
+
+	jobs = atoi(arg);
+	if (jobs < 1)
+		die(_("There must be a positive number of jobs"));
+
+	max_children_for_submodules = jobs;
+	max_children_for_fetch = jobs;
+
+	return 0;
+}
+
 static int parse_refmap_arg(const struct option *opt, const char *arg, int unset)
 {
 	BUG_ON_OPT_NEG(unset);
@@ -142,12 +156,13 @@ static struct option builtin_fetch_options[] = {
 		    N_("fetch all tags and associated objects"), TAGS_SET),
 	OPT_SET_INT('n', NULL, &tags,
 		    N_("do not fetch all tags (--no-tags)"), TAGS_UNSET),
-	OPT_INTEGER('j', "jobs", &max_children_for_submodules,
+	{ OPTION_CALLBACK, 'j', "jobs", NULL, N_("jobs"),
+		    N_("number of parallel tasks to run while fetching"),
+		    PARSE_OPT_OPTARG, &parse_jobs_arg },
+	OPT_INTEGER(0, "submodule-fetch-jobs", &max_children_for_submodules,
 		    N_("number of submodules fetched in parallel")),
 	OPT_INTEGER(0, "fetch-jobs", &max_children_for_fetch,
 		    N_("number of remotes fetched in parallel")),
-	OPT_INTEGER(0, "submodule-fetch-jobs", &max_children_for_submodules,
-		    N_("number of submodules fetched in parallel")),
 	OPT_BOOL('p', "prune", &prune,
 		 N_("prune remote-tracking branches no longer on remote")),
 	OPT_BOOL('P', "prune-tags", &prune_tags,
