@@ -146,6 +146,8 @@ static struct option builtin_fetch_options[] = {
 		    N_("number of submodules fetched in parallel")),
 	OPT_INTEGER(0, "fetch-jobs", &max_children_for_fetch,
 		    N_("number of remotes fetched in parallel")),
+	OPT_INTEGER(0, "submodule-fetch-jobs", &max_children_for_submodules,
+		    N_("number of submodules fetched in parallel")),
 	OPT_BOOL('p', "prune", &prune,
 		 N_("prune remote-tracking branches no longer on remote")),
 	OPT_BOOL('P', "prune-tags", &prune_tags,
