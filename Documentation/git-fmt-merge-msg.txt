@@ -48,6 +48,10 @@ OPTIONS
 	Prepare the merge message as if merging to the branch `<branch>`,
 	instead of the name of the real branch to which the merge is made.
 
+--from-name <branch>::
+	Prepare the merge message as if merging from the branch `<branch>`,
+	instead of the name of the real branch from which the merge is made.
+
 -F <file>::
 --file <file>::
 	Take the list of merged objects from <file> instead of

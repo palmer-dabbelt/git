@@ -10,6 +10,7 @@ struct fmt_merge_msg_opts {
 		credit_people:1;
 	int shortlog_len;
 	const char *into_name;
+	const char *from_name;
 };
 
 extern int merge_log_config;

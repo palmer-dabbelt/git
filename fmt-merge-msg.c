@@ -353,6 +353,7 @@ static void shortlog(const char *name,
 	struct strbuf sb = STRBUF_INIT;
 	const struct object_id *oid = &origin_data->oid;
 	int limit = opts->shortlog_len;
+	const char *from_name = opts->from_name ? opts->from_name : name;
 
 	branch = deref_tag(the_repository, parse_object(the_repository, oid),
 			   oid_to_hex(oid),
@@ -398,12 +399,12 @@ static void shortlog(const char *name,
 	if (opts->credit_people)
 		add_people_info(out, &authors, &committers);
 	if (count > limit)
-		strbuf_addf(out, "\n* %s: (%d commits)\n", name, count);
+		strbuf_addf(out, "\n* %s: (%d commits)\n", from_name, count);
 	else
-		strbuf_addf(out, "\n* %s:\n", name);
+		strbuf_addf(out, "\n* %s:\n", from_name);
 
 	if (origin_data->is_local_branch && use_branch_desc)
-		add_branch_desc(out, name);
+		add_branch_desc(out, from_name);
 
 	for (i = 0; i < subjects.nr; i++)
 		if (i >= limit)
@@ -441,51 +442,57 @@ static int dest_suppressed(const char *dest_branch)
 }
 
 static void fmt_merge_msg_title(struct strbuf *out,
-				const char *current_branch)
+				const char *current_branch,
+				const char *into_branch)
 {
 	int i = 0;
 	char *sep = "";
 
 	strbuf_addstr(out, "Merge ");
-	for (i = 0; i < srcs.nr; i++) {
-		struct src_data *src_data = srcs.items[i].util;
-		const char *subsep = "";
 
-		strbuf_addstr(out, sep);
-		sep = "; ";
+	if (into_branch) {
+		strbuf_addstr(out, into_branch);
+	} else {
+		for (i = 0; i < srcs.nr; i++) {
+			struct src_data *src_data = srcs.items[i].util;
+			const char *subsep = "";
 
-		if (src_data->head_status == 1) {
-			strbuf_addstr(out, srcs.items[i].string);
-			continue;
+			strbuf_addstr(out, sep);
+			sep = "; ";
+
+			if (src_data->head_status == 1) {
+				strbuf_addstr(out, srcs.items[i].string);
+				continue;
+			}
+			if (src_data->head_status == 3) {
+				subsep = ", ";
+				strbuf_addstr(out, "HEAD");
+			}
+			if (src_data->branch.nr) {
+				strbuf_addstr(out, subsep);
+				subsep = ", ";
+				print_joined("branch ", "branches ", &src_data->branch,
+						out);
+			}
+			if (src_data->r_branch.nr) {
+				strbuf_addstr(out, subsep);
+				subsep = ", ";
+				print_joined("remote-tracking branch ", "remote-tracking branches ",
+						&src_data->r_branch, out);
+			}
+			if (src_data->tag.nr) {
+				strbuf_addstr(out, subsep);
+				subsep = ", ";
+				print_joined("tag ", "tags ", &src_data->tag, out);
+			}
+			if (src_data->generic.nr) {
+				strbuf_addstr(out, subsep);
+				print_joined("commit ", "commits ", &src_data->generic,
+						out);
+			}
+			if (strcmp(".", srcs.items[i].string))
+				strbuf_addf(out, " of %s", srcs.items[i].string);
 		}
-		if (src_data->head_status == 3) {
-			subsep = ", ";
-			strbuf_addstr(out, "HEAD");
-		}
-		if (src_data->branch.nr) {
-			strbuf_addstr(out, subsep);
-			subsep = ", ";
-			print_joined("branch ", "branches ", &src_data->branch,
-					out);
-		}
-		if (src_data->r_branch.nr) {
-			strbuf_addstr(out, subsep);
-			subsep = ", ";
-			print_joined("remote-tracking branch ", "remote-tracking branches ",
-					&src_data->r_branch, out);
-		}
-		if (src_data->tag.nr) {
-			strbuf_addstr(out, subsep);
-			subsep = ", ";
-			print_joined("tag ", "tags ", &src_data->tag, out);
-		}
-		if (src_data->generic.nr) {
-			strbuf_addstr(out, subsep);
-			print_joined("commit ", "commits ", &src_data->generic,
-					out);
-		}
-		if (strcmp(".", srcs.items[i].string))
-			strbuf_addf(out, " of %s", srcs.items[i].string);
 	}
 
 	if (!dest_suppressed(current_branch))
@@ -678,7 +685,7 @@ int fmt_merge_msg(struct strbuf *in, struct strbuf *out,
 	}
 
 	if (opts->add_title && srcs.nr)
-		fmt_merge_msg_title(out, current_branch);
+		fmt_merge_msg_title(out, current_branch, opts->from_name);
 
 	if (origins.nr)
 		fmt_merge_msg_sigs(out);

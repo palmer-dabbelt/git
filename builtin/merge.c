@@ -88,6 +88,7 @@ static const char *sign_commit;
 static int autostash;
 static int no_verify;
 static char *into_name;
+static char *from_name;
 
 static struct strategy all_strategy[] = {
 	{ "recursive",  NO_TRIVIAL },
@@ -289,6 +290,8 @@ static struct option builtin_merge_options[] = {
 		NULL, 0, option_read_message },
 	OPT_STRING(0, "into-name", &into_name, N_("name"),
 		   N_("use <name> instead of the real target")),
+	OPT_STRING(0, "from-name", &from_name, N_("name"),
+		   N_("use <name> instead of the real source")),
 	OPT__VERBOSITY(&verbosity),
 	OPT_BOOL(0, "abort", &abort_current_merge,
 		N_("abort the current in-progress merge")),
@@ -1144,6 +1147,7 @@ static void prepare_merge_message(struct strbuf *merge_names, struct strbuf *mer
 	opts.shortlog_len = shortlog_len;
 	opts.credit_people = (0 < option_edit);
 	opts.into_name = into_name;
+	opts.from_name = from_name;
 
 	fmt_merge_msg(merge_names, merge_msg, &opts);
 	if (merge_msg->len)

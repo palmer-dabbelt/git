@@ -13,6 +13,7 @@ int cmd_fmt_merge_msg(int argc, const char **argv, const char *prefix)
 	const char *inpath = NULL;
 	const char *message = NULL;
 	char *into_name = NULL;
+	char *from_name = NULL;
 	int shortlog_len = -1;
 	struct option options[] = {
 		{ OPTION_INTEGER, 0, "log", &shortlog_len, N_("n"),
@@ -26,6 +27,8 @@ int cmd_fmt_merge_msg(int argc, const char **argv, const char *prefix)
 			N_("use <text> as start of message")),
 		OPT_STRING(0, "into-name", &into_name, N_("name"),
 			   N_("use <name> instead of the real target branch")),
+		OPT_STRING(0, "from-name", &from_name, N_("name"),
+			   N_("use <name> instead of the real source branch")),
 		OPT_FILENAME('F', "file", &inpath, N_("file to read from")),
 		OPT_END()
 	};
@@ -60,6 +63,7 @@ int cmd_fmt_merge_msg(int argc, const char **argv, const char *prefix)
 	opts.credit_people = 1;
 	opts.shortlog_len = shortlog_len;
 	opts.into_name = into_name;
+	opts.from_name = from_name;
 
 	ret = fmt_merge_msg(&input, &output, &opts);
 	if (ret)
